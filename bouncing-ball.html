@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>공 튀기기</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1a1a2e; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const balls = [];
+    const GRAVITY = 0.4;
+    const FRICTION = 0.98;
+    const BOUNCE = 0.75;
+
+    function randomBetween(a, b) {
+      return Math.random() * (b - a) + a;
+    }
+
+    function createBall(x, y) {
+      return {
+        x,
+        y,
+        vx: randomBetween(-5, 5),
+        vy: randomBetween(-8, -3),
+        radius: randomBetween(15, 40),
+        color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+      };
+    }
+
+    for (let i = 0; i < 5; i++) {
+      balls.push(createBall(
+        randomBetween(50, canvas.width - 50),
+        randomBetween(100, canvas.height / 2)
+      ));
+    }
+
+    canvas.addEventListener('click', (e) => {
+      balls.push(createBall(e.clientX, e.clientY));
+    });
+
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      let closestIndex = -1;
+      let closestDist = Infinity;
+      balls.forEach((ball, i) => {
+        const dist = Math.hypot(ball.x - e.clientX, ball.y - e.clientY);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIndex = i;
+        }
+      });
+      if (closestIndex !== -1) {
+        balls.splice(closestIndex, 1);
+      }
+    });
+
+    function drawBall(ball) {
+      const gradient = ctx.createRadialGradient(
+        ball.x - ball.radius * 0.3,
+        ball.y - ball.radius * 0.3,
+        ball.radius * 0.1,
+        ball.x, ball.y, ball.radius
+      );
+      gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+      gradient.addColorStop(0.3, ball.color);
+      gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
+
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+
+    function update(ball) {
+      ball.vy += GRAVITY;
+      ball.vx *= FRICTION;
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      // 바닥
+      if (ball.y + ball.radius >= canvas.height) {
+        ball.y = canvas.height - ball.radius;
+        ball.vy *= -BOUNCE;
+        ball.vx *= FRICTION;
+      }
+
+      // 천장
+      if (ball.y - ball.radius <= 0) {
+        ball.y = ball.radius;
+        ball.vy *= -BOUNCE;
+      }
+
+      // 좌우 벽
+      if (ball.x + ball.radius >= canvas.width) {
+        ball.x = canvas.width - ball.radius;
+        ball.vx *= -BOUNCE;
+      }
+      if (ball.x - ball.radius <= 0) {
+        ball.x = ball.radius;
+        ball.vx *= -BOUNCE;
+      }
+    }
+
+    function animate() {
+      ctx.fillStyle = 'rgba(26, 26, 46, 0.3)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (const ball of balls) {
+        update(ball);
+        drawBall(ball);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    animate();
+  </script>
+</body>
+</html>
