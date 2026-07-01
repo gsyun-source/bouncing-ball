@@ -2,133 +2,341 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>공 튀기기</title>
+  <title>Dream within a Dream</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #1a1a2e; overflow: hidden; }
-    canvas { display: block; }
+    body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; }
+
+    /* 1인칭 원근법 씬 */
+    .scene {
+      position: fixed; inset: 0; z-index: 1;
+      perspective: 1000px;
+      perspective-origin: 50% 10%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 0;
+    }
+
+    .laptop {
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(28deg);
+      margin-bottom: -60px;
+    }
+
+    /* ── 스크린 뚜껑 ── */
+    .lid {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      width: 660px;
+      transform-style: preserve-3d;
+      transform-origin: bottom center;
+      transform: translateX(-50%) rotateX(18deg);
+    }
+
+    .lid-shell {
+      background: linear-gradient(155deg, #2e2e34 0%, #1e1e24 60%, #131316 100%);
+      border-radius: 13px 13px 3px 3px;
+      padding: 11px 13px 7px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 0 40px rgba(140,80,255,0.12);
+    }
+
+    .camera-bar { display: flex; justify-content: center; height: 13px; margin-bottom: 6px; }
+    .camera-dot {
+      width: 6px; height: 6px;
+      background: radial-gradient(circle at 35% 35%, #4a4a54, #111);
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+    }
+
+    .screen-bezel {
+      background: #020206;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .screen-glare {
+      position: absolute; inset: 0;
+      background: linear-gradient(130deg, rgba(255,255,255,0.045) 0%, transparent 55%);
+      pointer-events: none; z-index: 2;
+    }
+    #ballCanvas { display: block; }
+
+    /* ── 키보드 베이스 ── */
+    .base {
+      width: 700px;
+      background: linear-gradient(180deg, #26262c 0%, #1c1c22 40%, #141418 100%);
+      border-radius: 0 0 16px 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-top: 1px solid rgba(0,0,0,0.95);
+      padding: 6px 14px 16px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.95), 0 0 0 1px rgba(0,0,0,0.6);
+    }
+
+    .hinge-line {
+      height: 2px;
+      background: linear-gradient(to right, transparent, rgba(160,100,255,0.18), transparent);
+      margin-bottom: 8px;
+    }
+
+    /* ── 키보드 ── */
+    .keyboard { margin-bottom: 10px; }
+
+    .key-row {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      margin-bottom: 3px;
+    }
+
+    .key {
+      flex: 1;
+      background: linear-gradient(180deg, #38383f 0%, #2c2c33 100%);
+      border: 1px solid rgba(0,0,0,0.65);
+      border-bottom: 2px solid rgba(0,0,0,0.85);
+      border-radius: 4px;
+      height: 27px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px;
+      color: rgba(215,205,235,0.65);
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+      font-weight: 500;
+      user-select: none; cursor: default;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.03);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .key.fn-row { height: 20px; font-size: 7px; }
+    .key.fixed { flex: none; }
+    .key:active {
+      background: linear-gradient(180deg, #2e2e35, #242429);
+      border-bottom-width: 1px;
+      transform: translateY(1px);
+    }
+
+    /* ── 트랙패드 ── */
+    .trackpad {
+      width: 200px; height: 58px;
+      background: linear-gradient(180deg, #1e1e25, #161619);
+      border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.05);
+      margin: 0 auto;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.7), inset 0 -1px 0 rgba(255,255,255,0.02);
+    }
+
+    .dream-label {
+      position: fixed; bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      color: rgba(180,140,240,0.25);
+      font-size: 11px; font-family: Georgia, serif;
+      letter-spacing: 6px; pointer-events: none; z-index: 2;
+    }
   </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
+  <canvas id="bgCanvas"></canvas>
+
+  <div class="scene">
+    <div class="laptop">
+
+      <!-- 스크린 뚜껑 -->
+      <div class="lid">
+        <div class="lid-shell">
+          <div class="camera-bar"><div class="camera-dot"></div></div>
+          <div class="screen-bezel">
+            <canvas id="ballCanvas"></canvas>
+            <div class="screen-glare"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 키보드 베이스 -->
+      <div class="base">
+        <div class="hinge-line"></div>
+        <div class="keyboard" id="keyboard"></div>
+        <div class="trackpad"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="dream-label">dream within a dream</p>
+
   <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    // ── 키보드 레이아웃 ──
+    // 각 항목: { k: 'key label', w: 고정너비(px, 없으면 flex:1), fn: fn행 여부 }
+    const ROWS = [
+      [
+        {k:'esc',w:38,fn:1},{k:'F1',w:30,fn:1},{k:'F2',w:30,fn:1},{k:'F3',w:30,fn:1},
+        {k:'F4',w:30,fn:1},{k:'F5',w:30,fn:1},{k:'F6',w:30,fn:1},{k:'F7',w:30,fn:1},
+        {k:'F8',w:30,fn:1},{k:'F9',w:30,fn:1},{k:'F10',w:30,fn:1},{k:'F11',w:30,fn:1},
+        {k:'F12',w:30,fn:1},{k:'del',w:38,fn:1},
+      ],
+      [
+        {k:'`'},{k:'1'},{k:'2'},{k:'3'},{k:'4'},{k:'5'},{k:'6'},
+        {k:'7'},{k:'8'},{k:'9'},{k:'0'},{k:'-'},{k:'='},{k:'⌫',w:54},
+      ],
+      [
+        {k:'tab',w:46},{k:'Q'},{k:'W'},{k:'E'},{k:'R'},{k:'T'},{k:'Y'},
+        {k:'U'},{k:'I'},{k:'O'},{k:'P'},{k:'['},{k:']'},{k:'\\'},
+      ],
+      [
+        {k:'caps',w:54},{k:'A'},{k:'S'},{k:'D'},{k:'F'},{k:'G'},{k:'H'},
+        {k:'J'},{k:'K'},{k:'L'},{k:';'},{k:"'"},{k:'return',w:68},
+      ],
+      [
+        {k:'shift',w:72},{k:'Z'},{k:'X'},{k:'C'},{k:'V'},{k:'B'},{k:'N'},
+        {k:'M'},{k:','},{k:'.'},{k:'/'},{k:'shift',w:86},
+      ],
+      [
+        {k:'fn',w:34},{k:'ctrl',w:34},{k:'⌥',w:34},{k:'⌘',w:46},
+        {k:'',w:190},{k:'⌘',w:46},{k:'⌥',w:34},
+        {k:'←',w:28},{k:'↑↓',w:28},{k:'→',w:28},
+      ],
+    ];
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const kbEl = document.getElementById('keyboard');
+    ROWS.forEach(row => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'key-row';
+      row.forEach(({ k, w, fn }) => {
+        const el = document.createElement('div');
+        el.className = 'key' + (fn ? ' fn-row' : '') + (w ? ' fixed' : '');
+        el.textContent = k;
+        if (w) el.style.width = w + 'px';
+        rowEl.appendChild(el);
+      });
+      kbEl.appendChild(rowEl);
+    });
 
-    const balls = [];
-    const GRAVITY = 0.4;
-    const FRICTION = 0.98;
-    const BOUNCE = 0.75;
+    // ── 스크린 크기 ──
+    const SW = Math.min(630, innerWidth - 120);
+    const SH = Math.round(SW * 0.595);
+    const ballCanvas = document.getElementById('ballCanvas');
+    ballCanvas.width = SW;
+    ballCanvas.height = SH;
 
-    function randomBetween(a, b) {
-      return Math.random() * (b - a) + a;
+    // ── 배경 캔버스 ──
+    const bgCanvas = document.getElementById('bgCanvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    const resize = () => { bgCanvas.width = innerWidth; bgCanvas.height = innerHeight; };
+    resize(); window.addEventListener('resize', resize);
+
+    const stars = Array.from({length: 230}, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.4 + 0.2,
+      phase: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.7 + 0.2,
+    }));
+
+    const nebulae = Array.from({length: 6}, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 0.3 + 0.08,
+      hue: Math.random() * 80 + 220,
+      opacity: Math.random() * 0.1 + 0.04,
+      vx: (Math.random() - .5) * .00013,
+      vy: (Math.random() - .5) * .00013,
+    }));
+
+    function drawBg(t) {
+      const BW = bgCanvas.width, BH = bgCanvas.height;
+      const g = bgCtx.createRadialGradient(BW*.5, BH*.4, 0, BW*.5, BH*.4, BW*.85);
+      g.addColorStop(0, '#1e0645'); g.addColorStop(.5, '#0a0120'); g.addColorStop(1, '#000008');
+      bgCtx.fillStyle = g; bgCtx.fillRect(0, 0, BW, BH);
+
+      nebulae.forEach(n => {
+        n.x = (n.x + n.vx + 1) % 1; n.y = (n.y + n.vy + 1) % 1;
+        const p = n.opacity * (.75 + .25 * Math.sin(t * .35 + n.hue));
+        const ng = bgCtx.createRadialGradient(n.x*BW, n.y*BH, 0, n.x*BW, n.y*BH, n.r*BW);
+        ng.addColorStop(0, `hsla(${n.hue},80%,60%,${p})`); ng.addColorStop(1, 'transparent');
+        bgCtx.fillStyle = ng;
+        bgCtx.fillRect((n.x-n.r)*BW, (n.y-n.r)*BH, n.r*BW*2, n.r*BH*2);
+      });
+
+      stars.forEach(s => {
+        const tw = .25 + .75 * (.5 + .5 * Math.sin(t * s.speed + s.phase));
+        bgCtx.beginPath(); bgCtx.arc(s.x*BW, s.y*BH, s.r, 0, Math.PI*2);
+        bgCtx.fillStyle = `rgba(230,210,255,${tw})`; bgCtx.fill();
+      });
     }
 
+    // ── 공 물리 ──
+    const ctx = ballCanvas.getContext('2d');
+    const W = SW, H = SH;
+    const GRAVITY = .27, FRICTION = .993, BOUNCE = .72;
+    const balls = [];
+
+    function rand(a, b) { return Math.random() * (b - a) + a; }
     function createBall(x, y) {
       return {
-        x,
-        y,
-        vx: randomBetween(-5, 5),
-        vy: randomBetween(-8, -3),
-        radius: randomBetween(15, 40),
-        color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+        x: x ?? rand(40, W-40), y: y ?? rand(40, H*.5),
+        vx: rand(-4, 4), vy: rand(-6, -2),
+        radius: rand(13, 26), hue: Math.random()*360,
+        gp: Math.random()*Math.PI*2,
       };
     }
+    for (let i = 0; i < 4; i++) balls.push(createBall());
 
-    for (let i = 0; i < 5; i++) {
-      balls.push(createBall(
-        randomBetween(50, canvas.width - 50),
-        randomBetween(100, canvas.height / 2)
-      ));
-    }
-
-    canvas.addEventListener('click', (e) => {
-      balls.push(createBall(e.clientX, e.clientY));
+    ballCanvas.addEventListener('click', e => {
+      const r = ballCanvas.getBoundingClientRect();
+      balls.push(createBall(e.clientX - r.left, e.clientY - r.top));
     });
-
-    canvas.addEventListener('contextmenu', (e) => {
+    ballCanvas.addEventListener('contextmenu', e => {
       e.preventDefault();
-      let closestIndex = -1;
-      let closestDist = Infinity;
-      balls.forEach((ball, i) => {
-        const dist = Math.hypot(ball.x - e.clientX, ball.y - e.clientY);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestIndex = i;
-        }
-      });
-      if (closestIndex !== -1) {
-        balls.splice(closestIndex, 1);
-      }
+      const r = ballCanvas.getBoundingClientRect();
+      const mx = e.clientX - r.left, my = e.clientY - r.top;
+      let ci = -1, md = Infinity;
+      balls.forEach((b, i) => { const d = Math.hypot(b.x-mx, b.y-my); if (d < md) { md = d; ci = i; } });
+      if (ci !== -1) balls.splice(ci, 1);
     });
 
-    function drawBall(ball) {
-      const gradient = ctx.createRadialGradient(
-        ball.x - ball.radius * 0.3,
-        ball.y - ball.radius * 0.3,
-        ball.radius * 0.1,
-        ball.x, ball.y, ball.radius
-      );
-      gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
-      gradient.addColorStop(0.3, ball.color);
-      gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
-
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
+    function updateBall(b) {
+      b.vy += GRAVITY; b.vx *= FRICTION; b.x += b.vx; b.y += b.vy;
+      if (b.y+b.radius >= H) { b.y = H-b.radius; b.vy *= -BOUNCE; b.vx *= FRICTION; }
+      if (b.y-b.radius <= 0) { b.y = b.radius; b.vy *= -BOUNCE; }
+      if (b.x+b.radius >= W) { b.x = W-b.radius; b.vx *= -BOUNCE; }
+      if (b.x-b.radius <= 0) { b.x = b.radius; b.vx *= -BOUNCE; }
+      b.gp += .04;
     }
 
-    function update(ball) {
-      ball.vy += GRAVITY;
-      ball.vx *= FRICTION;
-      ball.x += ball.vx;
-      ball.y += ball.vy;
-
-      // 바닥
-      if (ball.y + ball.radius >= canvas.height) {
-        ball.y = canvas.height - ball.radius;
-        ball.vy *= -BOUNCE;
-        ball.vx *= FRICTION;
-      }
-
-      // 천장
-      if (ball.y - ball.radius <= 0) {
-        ball.y = ball.radius;
-        ball.vy *= -BOUNCE;
-      }
-
-      // 좌우 벽
-      if (ball.x + ball.radius >= canvas.width) {
-        ball.x = canvas.width - ball.radius;
-        ball.vx *= -BOUNCE;
-      }
-      if (ball.x - ball.radius <= 0) {
-        ball.x = ball.radius;
-        ball.vx *= -BOUNCE;
-      }
+    function drawBallObj(b) {
+      ctx.shadowBlur = 14 + 7 * Math.sin(b.gp);
+      ctx.shadowColor = `hsl(${b.hue},100%,70%)`;
+      const g = ctx.createRadialGradient(b.x-b.radius*.35, b.y-b.radius*.35, b.radius*.05, b.x, b.y, b.radius);
+      g.addColorStop(0, `hsla(${b.hue+50},100%,96%,.95)`);
+      g.addColorStop(.35, `hsla(${b.hue},90%,68%,.9)`);
+      g.addColorStop(1, `hsla(${b.hue-30},70%,25%,.6)`);
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2);
+      ctx.fillStyle = g; ctx.fill(); ctx.shadowBlur = 0;
     }
 
+    function drawScreen(t) {
+      const bg = ctx.createLinearGradient(0, 0, W*.5, H);
+      bg.addColorStop(0, '#07011a'); bg.addColorStop(1, '#020010');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      const amb = ctx.createRadialGradient(W*.5, H*.5, 0, W*.5, H*.5, W*.6);
+      amb.addColorStop(0, `rgba(110,55,200,${.05+.02*Math.sin(t*.45)})`);
+      amb.addColorStop(1, 'transparent');
+      ctx.fillStyle = amb; ctx.fillRect(0, 0, W, H);
+
+      for (let y = 0; y < H; y += 3) { ctx.fillStyle = 'rgba(0,0,0,.07)'; ctx.fillRect(0, y, W, 1); }
+
+      balls.forEach(b => { updateBall(b); drawBallObj(b); });
+    }
+
+    let t = 0;
     function animate() {
-      ctx.fillStyle = 'rgba(26, 26, 46, 0.3)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      for (const ball of balls) {
-        update(ball);
-        drawBall(ball);
-      }
-
+      t += .016; drawBg(t); drawScreen(t);
       requestAnimationFrame(animate);
     }
-
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    });
-
     animate();
   </script>
 </body>
